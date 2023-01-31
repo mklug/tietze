@@ -10,54 +10,73 @@ public class Tietze {
 
 	public static void main(String[] args) {
 
-		// Initiation stage.  
 		Scanner scanner = new Scanner(System.in);
-
-		// Get generators.
-		Prompts.printGeneratorPrompt();
-		Prompts.printUserPromptSymbol();
-
 		Set<String> generators = new HashSet<String>();
-		checkForNoInput(scanner);	
-		String input = scanner.nextLine();
-
-		try {
-			String[] gens = input.split(",");
-			for (String g : gens) {
-				g = processGenerator(g);
-				generators.add(g);
-			}
-		} catch (InitiationException e){
-			System.out.println("Invalid generator input.");
-			System.exit(64);
-		}
-
-
-		// Get relations.
-		Prompts.printRelationPrompt();
-		Prompts.printUserPromptSymbol();
-
 		Set<List<String>> relations = new HashSet<List<String>>();
-		checkForNoInput(scanner);	
-		input = scanner.nextLine();
+		String input;
 
-		try {
-			String[] rels = input.split(",");
-			for (String r : rels) {
-				r = r.trim();
-				List<String> rList = new LinkedList<String>();
-				processRelation(r, generators, rList);
-				relations.add(rList);
+		//List<String> rList = new LinkedList<String>();
+	
+		//Initiation loop.
+		for (;;) {
+			// Get generators.
+			Prompts.printGeneratorPrompt();
+			Prompts.printUserPromptSymbol();
+
+			//Set<String> generators = new HashSet<String>();
+			checkForNoInput(scanner);	
+			input = scanner.nextLine().trim();
+
+			String[] gens = input.split(",");
+			boolean generatorsInitiated = true;
+			for (String g : gens) {
+				generatorsInitiated = generatorsInitiated && processGenerator(g, generators);
 			}
-		} catch (InitiationException e){
-			System.out.println("Invalid relation input.");
-			System.exit(64);
-		}
 
-		System.out.println("Group successfully initiated.");
+			if (generatorsInitiated) {
+
+				// Get relations.
+				Prompts.printRelationPrompt();
+				Prompts.printUserPromptSymbol();
+
+				//Set<List<String>> relations = new HashSet<List<String>>();
+				checkForNoInput(scanner);	
+				input = scanner.nextLine().trim();
+
+				//
+				if (input.trim().equals("")) break;
+
+
+				String[] rels = input.split(",");
+				boolean relationsInitiated = true;
+
+				for (String r : rels) {
+
+					List<String> rList = new LinkedList<String>();
+					r = r.replaceAll("\\s+", "");
+					relationsInitiated = relationsInitiated && processRelation(r, generators, rList);
+					relations.add(rList);
+				}
+
+				if (relationsInitiated) {
+					System.out.println("Group successfully initiated.");
+					break;
+				
+				} else {
+					printInvalidInput();
+					generators.clear();
+					relations.clear();
+				}
+
+			} else {
+				printInvalidInput();
+				generators.clear();
+			}
+		}
 		GroupPresentation group = new GroupPresentation(generators, relations);
-		
-		
+
+
+
 		// Main loop.
 		for (;;) {
 
@@ -67,16 +86,16 @@ public class Tietze {
 			Prompts.printTietzePrompt();
 			Prompts.printUserPromptSymbol();
 			checkForNoInput(scanner);	
-			String optionIorII = scanner.nextLine().trim();
+			input = scanner.nextLine().trim();
 
-			if (optionIorII.equals("1")) {
+			if (input.equals("1")) {
 
 				Prompts.printTietzeIPrompt();
 				Prompts.printUserPromptSymbol();
-				String optionI = scanner.nextLine().trim();
-				if (optionI.equals("1")) {
+				input = scanner.nextLine().trim();
+				if (input.equals("1")) {
 				
-				} else if (optionI.equals("1'")) {
+				} else if (input.equals("1'")) {
 				
 				} else {	
 					printInvalidInput();
@@ -85,58 +104,62 @@ public class Tietze {
 
 
 			
-			} else if (optionIorII.equals("2")) {
+			} else if (input.equals("2")) {
 
 				Prompts.printTietzeIIPrompt();
 				Prompts.printUserPromptSymbol();
-				String optionII = scanner.nextLine().trim();				
-				if (optionII.equals("2")) {
+				checkForNoInput(scanner);				
+				input = scanner.nextLine().trim();				
+				if (input.equals("2")) {
 
 					Prompts.printTietzeIIGetLetter();
-					Prompts.printUserPromptSymbol();				
-					String newLetter = scanner.nextLine().trim();
+					Prompts.printUserPromptSymbol();
+					checkForNoInput(scanner);												
+					input = scanner.nextLine().trim();
 					// Need to check this is new and has the valid format.
 					
-					boolean validNewLetter = isValidNewLetter(group, newLetter);
+					boolean validNewLetter = isValidNewLetter(group, input);
 
 					if (validNewLetter) { 
-
 						Prompts.printTietzeIIGetWord();
-						Prompts.printUserPromptSymbol();				
+						Prompts.printUserPromptSymbol();
+						checkForNoInput(scanner);
 						String wordForNewLetter = scanner.nextLine().trim();
 						// Need to check that this is a word in the letters.
-						
 						boolean validWordForNewLetter = isValidNewWordForNewLetter(group, wordForNewLetter);	
 						if (validWordForNewLetter) {
 
-							generators.add( newLetter );
-
+							group.addGenerator(input);
 							List<String> wordFormatted = new LinkedList<String>();
 							expandExponents(wordForNewLetter, wordFormatted);
-							wordFormatted.add(0, newLetter);
-						       	relations.add( wordFormatted );
-							
-							//group = null;	
-							//GroupPresentation group = new GroupPresentaion(generators, relations);
-							group = new GroupPresentation(generators, relations);
-						
-							
+							wordFormatted.add(0, input);
+							group.addRelation( wordFormatted );
+
 						} else printInvalidInput();
 					} else printInvalidInput();
 
-
-
-
-				} else if (optionII.equals("2'")) {
+				} else if (input.equals("2'")) {
 			
 					Prompts.printTietzeIIPrimePrompt();
-					Prompts.printUserPromptSymbol();				
+					Prompts.printUserPromptSymbol();
+					checkForNoInput(scanner);
+					input = scanner.nextLine().trim();
+					int rIndex = getIndexFromInputTIIPrime(input);
+					if (rIndex == -1) {
+						printInvalidInput();
+					} else {
+						if (isValidTIIPrime(rIndex, group)) {
+						
+							// add to group pres funcs for adding/removing gens/rels.
 
+							List<String> rel = group.getRelations().get(rIndex - 1);
+							String genRemove = rel.get(0);
+							group.removeGenerator(genRemove);
+							group.removeRelation(rIndex);
+							
 
-
-
-
-
+						} else printInvalidInput();
+					} 
 
 				} else printInvalidInput();
 
@@ -167,9 +190,42 @@ public class Tietze {
 		return false;
 	} 
 
+	// Gets index from word -- returns -1 if the word is invalid (not of the form ri).
+	private static int getIndexFromInputTIIPrime(String input) {
+		if (! StringFunctions.isLetterThenNumber(input) ) return -1;
+		if ( input.charAt(0) != 'r' ) return -1;
+		return Integer.parseInt( input.substring(1) );
+	
+	}
 
+	// Check if the word can be removed by TII' move -- i.e. is it of the form yw where w is a word in the other generators.
+	// The index i is the index of the proposed relator -- ri.  
+	private static boolean isValidTIIPrime(int index, GroupPresentation group) {
+	
+		// Need to check the index is in bounds.
+		if ( ! ( (1 <= index) && ( index <= group.getNumberRelations()) )) return false; 
 
+		// Need to check that the word is of the valid form yw with no y/Y in w.
+		List<List<String>> relations = group.getRelations();
+		List<String> relForRemoval = relations.get(index-1); // need to adjust index
+		String wordForRemoval = relForRemoval.get(0); // Take the first word.
 
+		for (int j = 1 ; j < relForRemoval.size(); j++) {
+			if (relForRemoval.get(j).equals(wordForRemoval) ||
+				relForRemoval.get(j).equals( StringFunctions.changeCase(wordForRemoval)) ) return false;
+		}
+	
+		// Need to check that all other relations do not contain a y/Y.	
+	
+		for (int j = 0; j < group.getNumberRelations(); j++) {
+			if (j == index - 1) continue;
+			for (int i = 0; i < relations.get(j).size(); i++) {
+				if (relations.get(j).get(i).equals(wordForRemoval) ||
+					relations.get(j).get(i).equals( StringFunctions.changeCase(wordForRemoval)) ) return false;
+			}
+		}	
+		return true;
+	}
 
 
 	private static void printInvalidInput() {
@@ -180,25 +236,30 @@ public class Tietze {
 		if (!scanner.hasNextLine()) System.exit(64);				
 	}
 
-	private static String processGenerator(String g)throws InitiationException {
+	private static boolean processGenerator(String g, Set<String> generators) {
 		g = g.trim();
-		if (StringFunctions.isLetter(g)) return g;
-		if (StringFunctions.isLetterThenNumber(g)) return g;
-		throw new InitiationException("Invalid generator entry.");
+		if (StringFunctions.isLetter(g) || StringFunctions.isLetterThenNumber(g) ) {
+			generators.add(g);	
+			return true;
+		}
+		return false;
 	}
 
-	private static void processRelation(String r, Set<String> generators, List<String> rList)throws InitiationException {
+	// Returns if the relation is valid as a word in the generators.
+	// rList should be empty as input.
+	// rList on exit has the relation expanded in it.  
+	private static boolean processRelation(String r, Set<String> generators, List<String> rList) {
+		r = r.trim();
 		
 		// Check the format is correct.
 		if (isValidRelationWordFormat(r)) {
 			r = expandExponents(r, rList);
-
 			// Check that it fits with the generators.
 			if (doesWordBelong(r, generators)) {
-				return;
+				return true;
 			}
 		}
-		throw new InitiationException("Invalid generator entry."); 
+		return false;
 	}
 
 	// Checks that the word is of the form a2A3^{-3}b12A3^{2}
@@ -257,7 +318,6 @@ public class Tietze {
 			str = StringFunctions.removeFirstLetter(str);
 			list.add(s);
 		} while (str != "");
-
 		return strCopy;
 	}
 
@@ -265,7 +325,6 @@ public class Tietze {
 	// Takes as input the fully exponentiated form.
 	private static boolean doesWordBelong(String word, Set<String> generators) {
 		boolean out = true;
-
 		String str;
 		do {
 			str = StringFunctions.returnFirstLetter(word);
@@ -276,11 +335,4 @@ public class Tietze {
 		} while (word != "");
 		return out;	
 	}
-}
-
-class InitiationException extends Exception {
-	public InitiationException(String s)
-    	{
-		super(s);
-    	}
 }

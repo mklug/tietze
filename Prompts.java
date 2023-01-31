@@ -25,7 +25,7 @@ public class Prompts {
 
 	public static void printTietzeIIPrompt() {
 		System.out.println("Apply Tietze move 2 (add a redundant generator) or 2' " + 
-				"(remove a redundant generator)? \nEnter: '2' or '2'.");
+				"(remove a redundant generator)? \nEnter: '2' or '2''.");
 	}
 
 	public static void printTietzeIIGetLetter() {
@@ -36,10 +36,8 @@ public class Prompts {
 		System.out.println("Enter word to equal the inverse of the new letter:");	
 	}
 	
-
-
 	public static void printTietzeIIPrimePrompt() {
-		System.out.println("");	
+		System.out.println("Enter relation to be removed (e.g., 'r2'): ");	
 	}
 
 }

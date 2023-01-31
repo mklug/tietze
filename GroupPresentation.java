@@ -3,30 +3,62 @@ package tietze;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
+import java.util.ArrayList;
 
 public class GroupPresentation {
 	
-	private final Set<String> generators;
-	private final Set<List<String>> relations;
+	private Set<String> generators;
+	private List<List<String>> relations;
 
 
-	public GroupPresentation(Set<String> generators, Set<List<String>> relations) {
+	public GroupPresentation(Set<String> generators, Set<List<String>> relationsAsSet) {
 		this.generators = generators;
 
-		for (List<String> rel : relations) {
+		List<List<String>> relationsForOutput = new ArrayList<>();
+
+		for (List<String> rel : relationsAsSet) {
 			reduceWord(rel);
-		//	if re lis empty delete...
+			if (! (rel.size() == 0) ) relationsForOutput.add(rel);
 		}
-		this.relations = relations;
+		this.relations = relationsForOutput;
 	}
 
 	public Set<String> getGenerators() {
 		return generators;
 	}
 
-	public Set<List<String>> getRelations() {
+	public List<List<String>> getRelations() {
 		return relations;	
 	}
+
+	public void removeGenerator(String gen) {
+		gen = gen.trim();
+		generators.remove(gen);
+	}
+
+	public void removeRelation(List<String> relation) {
+		relations.remove(relation);
+	}
+
+	// Note the index shift.
+	public void removeRelation(int indexOfRelation) {
+		relations.remove(indexOfRelation - 1);
+	}
+
+	// Note : Does not do the checking for compatability.  Must be done by client.
+	public void addGenerator(String gen) {
+		generators.add(gen);
+	}
+
+	// Note : Does not do the checking for compatability.  Must be done by client.
+	public void addRelation(List<String> rel) {
+		relations.add(rel);
+	}
+
+	public int getNumberRelations() {
+		return relations.size();
+	}
+
 
 
 	public void printGroup() {
@@ -39,9 +71,14 @@ public class GroupPresentation {
 		System.out.println(generators);
 	}
 
+	// Note the index shift when printing the relations.
 	public void printRelations() {
 		System.out.println("Group relations: ");
-		System.out.println(relations);
+		int rIndex;
+		for (int i = 0; i < relations.size(); i++) {
+			rIndex = i + 1;
+			System.out.println("r" + rIndex + " = " + relations.get(i)); 
+		}
 	}
 
 	public void reduceWord(List<String> word) {

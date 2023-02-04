@@ -15,9 +15,8 @@ public class Tietze {
 		Set<List<String>> relations = new HashSet<List<String>>();
 		String input;
 
-		//List<String> rList = new LinkedList<String>();
-	
 		//Initiation loop.
+		// Gets the generators and relations for the group.  
 		for (;;) {
 			// Get generators.
 			Prompts.printGeneratorPrompt();
@@ -39,13 +38,10 @@ public class Tietze {
 				Prompts.printRelationPrompt();
 				Prompts.printUserPromptSymbol();
 
-				//Set<List<String>> relations = new HashSet<List<String>>();
 				checkForNoInput(scanner);	
 				input = scanner.nextLine().trim();
 
-				//
-				if (input.trim().equals("")) break;
-
+				if (input.equals("")) break;
 
 				String[] rels = input.split(",");
 				boolean relationsInitiated = true;
@@ -75,8 +71,6 @@ public class Tietze {
 		}
 		GroupPresentation group = new GroupPresentation(generators, relations);
 
-
-
 		// Main loop.
 		for (;;) {
 
@@ -88,22 +82,60 @@ public class Tietze {
 			checkForNoInput(scanner);	
 			input = scanner.nextLine().trim();
 
+			// Tietze I
+
 			if (input.equals("1")) {
 
 				Prompts.printTietzeIPrompt();
 				Prompts.printUserPromptSymbol();
 				input = scanner.nextLine().trim();
 				if (input.equals("1")) {
-				
+
+					Prompts.printTietzeIGetRedundantRelation();
+					Prompts.printUserPromptSymbol();
+					checkForNoInput(scanner);												
+					input = scanner.nextLine();
+					input = input.replaceAll("\\s", "");
+
+					if (isValidRedundantRelationForm(group, input)) {
+						List<String> rel = expandRedundantRelationInput(input, group);
+						group.addRelation(rel);
+					} else printInvalidInput();
+
 				} else if (input.equals("1'")) {
-				
-				} else {	
-					printInvalidInput();
-				}	
 
+					Prompts.printTietzeIPGetRedundantRelation();
+					Prompts.printUserPromptSymbol();
+					checkForNoInput(scanner);												
+					String redundantRelation = scanner.nextLine();
+					redundantRelation = redundantRelation.replaceAll("\\s", "");
 
+					int rIndex = getIndexFromInputRelation(redundantRelation);
+					if ((rIndex == -1) || !((1 <= rIndex) && ( rIndex <= group.getNumberRelations())  ) ) {
+						printInvalidInput();
+						continue;
+					} 
 
-			
+					Prompts.printTietzeIPGetWordForRedundantRelation();
+					Prompts.printUserPromptSymbol();
+					checkForNoInput(scanner);												
+					input = scanner.nextLine();
+					input = input.replaceAll("\\s", "");
+
+					// Check that the user input makes sense and is actually equal to the relation.
+					if ( isValidRedundantRelationForm(group, input) 
+								&& checkRelationWordEquality(input, rIndex, group)
+								&& containsWordTIPrimeCheck( redundantRelation, input) ) {
+
+						// Remove the relation.	
+						group.removeRelation(rIndex);
+
+					} else printInvalidInput();
+
+				} else printInvalidInput();
+
+			// Tietze II
+
 			} else if (input.equals("2")) {
 
 				Prompts.printTietzeIIPrompt();
@@ -118,9 +150,7 @@ public class Tietze {
 					input = scanner.nextLine().trim();
 					// Need to check this is new and has the valid format.
 					
-					boolean validNewLetter = isValidNewLetter(group, input);
-
-					if (validNewLetter) { 
+					if (isValidNewLetter(group, input) ) { 
 						Prompts.printTietzeIIGetWord();
 						Prompts.printUserPromptSymbol();
 						checkForNoInput(scanner);
@@ -144,7 +174,7 @@ public class Tietze {
 					Prompts.printUserPromptSymbol();
 					checkForNoInput(scanner);
 					input = scanner.nextLine().trim();
-					int rIndex = getIndexFromInputTIIPrime(input);
+					int rIndex = getIndexFromInputRelation(input);
 					if (rIndex == -1) {
 						printInvalidInput();
 					} else {
@@ -157,14 +187,171 @@ public class Tietze {
 							group.removeGenerator(genRemove);
 							group.removeRelation(rIndex);
 							
-
 						} else printInvalidInput();
 					} 
-
 				} else printInvalidInput();
-
 			} else printInvalidInput();
 		}
+	}
+
+	// checks that the word in the realtions (e.g., r1^{ab} R2) does not contain the relation to be removed -- say r3.
+	private static boolean containsWordTIPrimeCheck( String redundantRelation, String wordInRelations) {
+		String[] wordInRelationsSplit = wordInRelations.replace("^","").split("[[\\{\\}]]");
+		String firstLetter;
+		for (int i = 0; i < wordInRelationsSplit.length; i++) {
+
+			while (wordInRelationsSplit[i] != "") {
+				firstLetter = StringFunctions.returnFirstLetter(wordInRelationsSplit[i]);			
+				wordInRelationsSplit[i] = StringFunctions.removeFirstLetter(wordInRelationsSplit[i]);
+				if (firstLetter.equals(redundantRelation) || firstLetter.equals(StringFunctions.changeCase(redundantRelation))) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private static boolean checkRelationWordEquality(String input, int rIndex, GroupPresentation group) {
+		
+		List<String> redundantRelationInput =  expandRedundantRelationInput(input,group);
+		GroupPresentation.reduceWord(redundantRelationInput);
+		List<List<String>> relations = group.getRelations();
+		if (relations.get(rIndex - 1).equals(redundantRelationInput)) return true;
+		return false;
+	}
+
+	private static boolean isValidRedundantRelationForm(GroupPresentation group, String input) {
+
+		if (input.trim().equals("")) return false;
+
+		List<List<String>> relations = group.getRelations();
+		int numberRelations = group.getNumberRelations();
+		Set<String> generators = group.getGenerators();
+		// Check that the input is of the correct form.
+
+		String regExp = "(  [rR](\\d)+  (\\^\\{ ([a-zA-Z]+(\\d)*)+ \\} )?    )+";
+		regExp = regExp.replaceAll("\\s", "");
+		if (! input.matches(regExp) ) {
+			return false;
+		}
+
+		// Still need to check that the exponents live in the group and 
+		// the relation numbers are in bounds.  
+		
+		String[] inputSplit = input.replace("^","").split("[[\\{\\}]]");
+
+		// Are we currently reading inside of an exponent.  
+		boolean inExponent = false;
+
+		int i = 0;
+		String currentBlock;
+		String firstLetter;
+		int indexOfR;
+		do {
+			// Check the relation indices are in bounds.
+			if (!inExponent) {
+				// Current block r's with indices.
+				currentBlock = inputSplit[i];
+				do {
+					firstLetter = StringFunctions.returnFirstLetter(currentBlock);			
+					currentBlock = StringFunctions.removeFirstLetter(currentBlock);
+					indexOfR = Integer.parseInt(firstLetter.substring(1));
+					if (!( (0 <= indexOfR) || (indexOfR < numberRelations))) return false;
+				} while (currentBlock != "");
+			} else {
+				// Current block of letters which we chekc are contained in the generators.
+				currentBlock = inputSplit[i];
+				do {
+					firstLetter = StringFunctions.returnFirstLetter(currentBlock);			
+					currentBlock = StringFunctions.removeFirstLetter(currentBlock);
+					if (! ( (generators.contains(firstLetter)) || generators.contains(StringFunctions.changeCase(firstLetter))) ) return false;
+				} while (currentBlock != "");
+			}
+			i++;
+
+			// Swap truth value
+			inExponent ^= true;
+		} while (i < inputSplit.length);
+		return true;
+	}
+
+	private static List<String> expandRedundantRelationInput(String input, GroupPresentation group) {
+		List<String> output = new LinkedList<String>();
+		List<List<String>> relations = group.getRelations();
+
+		String[] inputSplit = input.replace("^","").split("[[\\{\\}]]");
+
+		int i = 0;
+		String currentBlock;
+		String firstLetter;
+		String lastLetterOfRBlock = "";
+		char rOrR;
+		int indexOfR;
+		String exponent; 
+		// Loop over inputSplit.  The parity of i determines if we are in a block of r's or
+		// a block of letters from the base group.  
+		while (i < inputSplit.length) {
+			if ( (i % 2) == 0) {
+				// We are in a block of r's
+				currentBlock = inputSplit[i];
+				while (currentBlock != "") {
+					firstLetter = StringFunctions.returnFirstLetter(currentBlock);			
+					currentBlock = StringFunctions.removeFirstLetter(currentBlock);
+					indexOfR = Integer.parseInt(firstLetter.substring(1));
+					rOrR = firstLetter.charAt(0);
+
+					// Check if this is the last letter in the block of r's
+					if (currentBlock == "") {
+						lastLetterOfRBlock = firstLetter;				
+						break;
+					}
+					addRelationToList(group, indexOfR, output, rOrR);
+					// When we reach the last r in the block, we need to conjugate.
+				} // On exiting this while loop, firstLetter variable is now the last letter of the r block
+				
+				indexOfR = Integer.parseInt(lastLetterOfRBlock.substring(1));
+				rOrR = lastLetterOfRBlock.charAt(0);
+
+				// Check that there is a word to conjugate by.
+				if ( i < inputSplit.length - 1 ) {
+					// conjugate.
+					exponent = inputSplit[i+1];
+					StringFunctions.addWordToList(StringFunctions.invertWord(exponent), output); // x^g = g^{-1} x g
+					addRelationToList(group, indexOfR, output, rOrR);
+					StringFunctions.addWordToList(exponent, output);
+				} else { // Otherwise just add the word.
+					addRelationToList(group, indexOfR, output, rOrR);
+				}
+			}
+			i++;
+		}
+		return output;
+	}
+
+	private static void addRelationToList(GroupPresentation group, int indexOfR, List<String> list, char rOrR ) {
+		// Check if we have the relation r or the inverse R.
+		if (rOrR == 'r') {
+			addRelationToList(group, indexOfR, list);
+		} else if (rOrR == 'R') {
+			addInverseRelationToList(group, indexOfR, list);
+		}
+	}
+
+	// Note the index differs from how it is pritined by 1.
+	private static void addRelationToList(GroupPresentation group, int indexOfR, List<String> list) {
+		List<List<String>> relations = group.getRelations();
+		List<String> relation = relations.get(indexOfR-1); // now add each letter to the output. 
+		String relationAsString = StringFunctions.listStringToString(relation);
+		StringFunctions.addWordToList(relationAsString, list);
+
+	}
+
+	// Note the index differs from how it is pritined by 1.
+	private static void addInverseRelationToList(GroupPresentation group, int indexOfR, List<String> list) {
+		List<List<String>> relations = group.getRelations();
+		List<String> relation = relations.get(indexOfR-1); // now add each letter to the output. 
+		String relationAsString = StringFunctions.listStringToString(relation);
+		StringFunctions.addWordToList(StringFunctions.invertWord(relationAsString), list);
 	}
 
 	private static boolean isValidNewLetter(GroupPresentation group, String newLetter) {
@@ -190,8 +377,8 @@ public class Tietze {
 		return false;
 	} 
 
-	// Gets index from word -- returns -1 if the word is invalid (not of the form ri).
-	private static int getIndexFromInputTIIPrime(String input) {
+	// Gets index i from word which should be of the form 'ri' -- returns -1 if the word is invalid.
+	private static int getIndexFromInputRelation(String input) {
 		if (! StringFunctions.isLetterThenNumber(input) ) return -1;
 		if ( input.charAt(0) != 'r' ) return -1;
 		return Integer.parseInt( input.substring(1) );

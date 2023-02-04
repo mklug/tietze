@@ -1,5 +1,10 @@
 package tietze;
 
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Collections;
+
+
 public class StringFunctions {
 
 	public static char changeCase(char c) {
@@ -14,7 +19,6 @@ public class StringFunctions {
 		for (int i = 0; i < str.length(); i++) {
 			c = str.charAt(i);
 			c = changeCase(c);
-			
 			out += c;
 		}
 		return out;
@@ -82,6 +86,37 @@ public class StringFunctions {
 		if (l == word.length()) return "";
 		return word.substring(l, word.length());
 	}
+
+	public static String invertWord(String word) {
+		List<String> wordAsList = new LinkedList<String>();
+		addWordToList(word, wordAsList);
+		Collections.reverse(wordAsList);
+		String output = "";
+		for (int i = 0; i < wordAsList.size() ;i++) {
+			output += changeCase(wordAsList.get(i));
+		}
+		return output;
+	}
+
+	public static void addWordToList(String word, List<String> list) {
+		String firstLetter;
+		while (word != "") {
+			firstLetter = returnFirstLetter(word);			
+			word = removeFirstLetter(word);
+			list.add(firstLetter);
+		}
+	}
+
+
+	public static String listStringToString(List<String> list) {
+		String output = "";
+		for (int i = 0; i < list.size(); i++) {
+			output += list.get(i);		
+		}
+		return output;
+	}
+
+	
 
 
 }

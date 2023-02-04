@@ -52,14 +52,14 @@ public class GroupPresentation {
 
 	// Note : Does not do the checking for compatability.  Must be done by client.
 	public void addRelation(List<String> rel) {
+		reduceWord(rel);
+		if (rel.size() == 0) return;
 		relations.add(rel);
 	}
 
 	public int getNumberRelations() {
 		return relations.size();
 	}
-
-
 
 	public void printGroup() {
 		printGenerators();
@@ -81,7 +81,7 @@ public class GroupPresentation {
 		}
 	}
 
-	public void reduceWord(List<String> word) {
+	public static void reduceWord(List<String> word) {
 
 		boolean changed;
 		do {
